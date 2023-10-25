@@ -12,6 +12,10 @@ using System.Windows.Forms;
 using System.Management;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Threading;
+using System.Web;
+using System.Diagnostics;
+using System.Data.SqlTypes;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace SerialCom
 {
@@ -24,6 +28,18 @@ namespace SerialCom
         String saveDataFile = null;
         FileStream saveDataFS = null;
         String openserialport =null;
+        string spsidata=null;
+        int ymodemflag = 0;
+        const byte SOH = 1;  // Start of TeXt 128
+        const byte STX = 2;  // Start of TeXt 1024
+        const byte EOT = 4;  // End Of Transmission
+        const byte ACK = 6;  // Positive AC knowledgement
+        const byte C = 67;   // capital letter C
+        const byte NAK = 21;
+        int DataVolume = 0;
+        string content1 = string.Empty;
+        public delegate void Displaydelegate(byte[] InputBuf);
+        public Displaydelegate disp_delegate;
 
         public MainForm()
         {
@@ -77,6 +93,8 @@ namespace SerialCom
         public const int WM_DEVICE_CHANGE = 0x219;
         public const int DBT_DEVICEARRIVAL = 0x8000;
         public const int DBT_DEVICE_REMOVE_COMPLETE = 0x8004;
+
+
         /// <summary>
         /// 检测USB串口的拔插
         /// </summary>
@@ -193,15 +211,19 @@ namespace SerialCom
             Init_Port_Confs();
 
             Control.CheckForIllegalCrossThreadCalls = false;
+            disp_delegate = new Displaydelegate(DispUI);
             serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceived);
 
-
+            this.StatusDate.Text=DateTime .Now.ToShortDateString();
+            this.StatusTime.Text=DateTime .Now.ToLongTimeString();
             //准备就绪              
             serialPort.DtrEnable = true;
             serialPort.RtsEnable = true;
+            serialPort.ReadBufferSize = 40960;
+            serialPort.WriteBufferSize = 40960;
             //设置数据读取超时为1秒
-            serialPort.ReadTimeout = 1000;
-
+           // serialPort.ReadTimeout = 1000;
+            timer1.Stop();
             serialPort.Close();
 
             buttonSendData.Enabled = false;
@@ -255,7 +277,7 @@ namespace SerialCom
 
 
             buttonOpenCloseCom.Text = "打开串口";
-
+            buttonOpenCloseCom.ForeColor=Color.Black;
             if (saveDataFS != null)
             {
                 saveDataFS.Close(); // 关闭文件
@@ -341,13 +363,14 @@ namespace SerialCom
                     comboBoxDataBit.Enabled = false;
                     comboBoxCheckBit.Enabled = false;
                     comboBoxStopBit.Enabled = false;
-                    radioButtonSendDataASCII.Enabled = false;
-                    radioButtonSendDataHex.Enabled = false;
-                    radioButtonReceiveDataASCII.Enabled = false;
-                    radioButtonReceiveDataHEX.Enabled = false;
+                    //radioButtonSendDataASCII.Enabled = false;
+                    //radioButtonSendDataHex.Enabled = false;
+                    //radioButtonReceiveDataASCII.Enabled = false;
+                    //radioButtonReceiveDataHEX.Enabled = false;
                     buttonSendData.Enabled = true;
 
                     buttonOpenCloseCom.Text = "关闭串口";
+                    buttonOpenCloseCom.ForeColor = Color.Red;
 
                 }
                 catch (System.Exception ex)
@@ -363,15 +386,15 @@ namespace SerialCom
 
             }
         }
+        int NUMBER=0,NUMBER1=0,NUMBER2=0,NUMBER3=0;
 
         //接收数据
         private void DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             if (serialPort.IsOpen)
             {
-                //MessageBox.Show("sss","OK");
+                
                 //输出当前时间
-
                 if (checkBoxTime.Checked == true)
                 {
 
@@ -381,18 +404,19 @@ namespace SerialCom
                     //dateTimeNow.GetDateTimeFormats('f')[0].ToString() + "\r\n";
                 }
                 richTextBox1.ForeColor = Color.Black;    //改变字体的颜色
-                if (radioButtonReceiveDataASCII.Checked == true) //接收格式为ASCII
+                if (ymodemflag == 0)
                 {
+                  Thread.Sleep(50);
+                  if (radioButtonReceiveDataASCII.Checked == true) //接收格式为ASCII
+                  {
                     try
                     {
-                        String input = serialPort.ReadLine();
-                        richTextBox1.Text += input + "\r\n";
-                        // save data to file
-                        //if (saveDataFS != null)
-                        //{
-                        //    byte[] info = new UTF8Encoding(true).GetBytes(input + "\r\n");
-                        //    saveDataFS.Write(info, 0, info.Length);
-                        //}
+
+                        byte[] receivedData = new byte[serialPort.BytesToRead];//创建接收数据数组
+                        serialPort.Read(receivedData, 0, receivedData.Length);//读取数据
+                        string content = string.Empty;
+                        content = Encoding.Default.GetString(receivedData);
+                        richTextBox1.Text += content + "\r\n";
                     }
                     catch (System.Exception ex)
                     {
@@ -402,41 +426,196 @@ namespace SerialCom
                     richTextBox1.SelectionStart = richTextBox1.Text.Length;
                     richTextBox1.ScrollToCaret();//滚动到光标处
                     serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer 
-                }
-                else //接收格式为HEX
-                {
+                    }
+                  else //接收格式为HEX
+                  {
                     try
                     {
-                        string input = serialPort.ReadLine();
-                        char[] values = input.ToCharArray();
-                        foreach (char letter in values)
-                        {
-                            // Get the integral value of the character.
-                            int value = Convert.ToInt32(letter);
-                            // Convert the decimal value to a hexadecimal value in string form.
-                            string hexOutput = String.Format("{0:X}", value);
-                            richTextBox1.AppendText(hexOutput + " ");
-                            richTextBox1.SelectionStart = richTextBox1.Text.Length;
-                            richTextBox1.ScrollToCaret();//滚动到光标处
-                            //richTextBox1.Text += hexOutput + " ";
-                        }
+                        //string input = serialPort.ReadLine();
+                        //char[] values = input.ToCharArray();
+                        //foreach (char letter in values)
+                        //{
+                        //    // Get the integral value of the character.
+                        //    int value = Convert.ToInt32(letter);
+                        //    // Convert the decimal value to a hexadecimal value in string form.
+                        //    string hexOutput = String.Format("{0:X}", value);
+                        //    richTextBox1.AppendText(hexOutput + " ");
+                        //    richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                        //    richTextBox1.ScrollToCaret();//滚动到光标处
+                        //}
                         // save data to file
-                        if (saveDataFS != null)
+                        //if (saveDataFS != null)
+                        //{
+                        //    byte[] info = new UTF8Encoding(true).GetBytes(input + "\r\n");
+                        //    saveDataFS.Write(info, 0, info.Length);
+                        //}
+                        byte[] receivedData = new byte[serialPort.BytesToRead];//创建接收数据数组
+                        serialPort.Read(receivedData, 0, receivedData.Length);//读取数据
+                        string content = string.Empty;
+                        for (int i = 0; i < receivedData.Length; i++)
                         {
-                            byte[] info = new UTF8Encoding(true).GetBytes(input + "\r\n");
-                            saveDataFS.Write(info, 0, info.Length);
+                            //ToString("X2") 为C#中的字符串格式控制符
+                            //X为     十六进制
+                            //2为 每次都是两位数
+                            content += (receivedData[i].ToString("X2") + " ");
                         }
+                        richTextBox1.AppendText(content + " ");
                     }
                     catch (System.Exception ex)
                     {
                         MessageBox.Show(ex.Message, "Error");
                         richTextBox1.Text = "";//清空
                     }
+                        richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                        richTextBox1.ScrollToCaret();//滚动到光标处
+                        serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer 
+                    } 
+                }
+                else
+                {
+                    try
+                    {
+                        
+                        Thread.Sleep(50);
+                        byte[] receivedData = new byte[serialPort.BytesToRead];//创建接收数据数组
+                        int datanumber = serialPort.BytesToRead;
+                        if (datanumber == 133)
+                        {
+                            serialPort.Read(receivedData, 0, receivedData.Length);//读取数据
+                            this.Invoke(disp_delegate, receivedData);
+
+                        }
+                        else if (datanumber >0)
+                        {
+                           serialPort.Read(receivedData,0,1);
+                           switch (receivedData[0]) 
+                            { 
+                            case EOT:
+                                if (NUMBER == 0)
+                                {
+                                    serialPort.Write(new byte[] { NAK }, 0, 1);//发送一行数据 
+                                    NUMBER++;
+                                }
+                                else
+                                {
+                                    NUMBER=0;
+                                    serialPort.Write(new byte[] { ACK, C }, 0, 2);//发送一行数据 
+                                }
+                                richTextBox1.AppendText("\r\n"+"EOT"+ "\r\n");
+                                richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                                richTextBox1.ScrollToCaret();//滚动到光标处
+                                break;
+                            case NAK:
+                                richTextBox1.AppendText("\r\n" + "NAK" + "\r\n");
+                                richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                                richTextBox1.ScrollToCaret();//滚动到光标处
+                                serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据 
+                                break;
+                            case ACK:
+                                ymodemflag = 0; NUMBER1 = 0;
+                                Debug.WriteLine(Convert.ToString(NUMBER2));
+                                NUMBER2 = 0;
+                                YmodemBar1.Value = 0;
+                                richTextBox1.AppendText("\r\n" + "数据已经获取完毕" + "\r\n");
+                                richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                                richTextBox1.ScrollToCaret();//滚动到光标处
+                                timer1.Stop();
+                                break;
+                            }
+                        }
+                        serialPort.DiscardInBuffer();
+                        serialPort.DiscardOutBuffer();
+                    }
+                    catch (Exception ex)
+                    {
+                       Console.WriteLine(spsidata);
+                       MessageBox.Show("exception33", ex.Message);
+                    }
                 }
             }
             else
             {
                 MessageBox.Show("请打开某个串口", "错误提示");
+            }
+        }
+        string showdata = null;
+        public void DispUI(byte[] receivedData)
+        {
+            if (YmodemClass.isPassCRC(receivedData, 2))
+            {
+                content1 = Encoding.Default.GetString(receivedData);
+                if (receivedData[1] == 00 && NUMBER1 == 0)
+                {
+                    NUMBER1 = 1;
+                    DateTime dateTimeNow = DateTime.Now;
+                    var n = dateTimeNow.ToString("MM-dd-HH-mm-ss");
+                    string time = string.Format("{0}", n);
+                    string[] inheritdata = content1.Split('\0');
+                    string str1 = System.Environment.CurrentDirectory;
+                    DataVolume = Convert.ToInt32(inheritdata[2]);
+                    spsidata = str1 + "\\" + time + inheritdata[1].Substring(1);
+                   // FileStream fs = new FileStream(spsidata, FileMode.Create);
+                    serialPort.Write(new byte[] { ACK, C }, 0, 2);//发送一行数据
+                    richTextBox1.Text = "";//清空
+                    NUMBER3 = 1;
+                }
+                else if (receivedData[1] + receivedData[2] == 255)//(serialPort.ReadByte() != ACK)
+                {
+
+                    NUMBER2++;
+                    NUMBER3 = 1;
+                    int t = DataVolume / 128;
+                    if(t == 0) { t = 1; }
+                    string percentage = Convert.ToString(NUMBER2*100/t);
+                    if(showdata!= percentage)
+                    {
+                        showdata = percentage;
+                        richTextBox1.Text=" ";
+                        richTextBox1.AppendText("当前进度"+ showdata + "%"+ "\r\n");
+                        YmodemBar1.Value= Convert.ToInt32(showdata);
+                        richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                        richTextBox1.ScrollToCaret();//滚动到光标处
+                    }
+
+                    //if (NUMBER1 == 1)
+                    //{
+                    //    NUMBER1 = 2;
+                    //    content1 = Encoding.Default.GetString(receivedData, 3, receivedData.Length - 5);
+                    //    string[] inheritdata = content1.Split('\n');
+                    //    content1 = inheritdata[0];
+                    //}
+                    //else
+                    //{
+
+                    content1 = Encoding.Default.GetString(receivedData, 3, receivedData.Length - 5);
+
+                    //}
+                    //richTextBox1.AppendText(content1);
+                    //richTextBox1.SelectionStart = richTextBox1.Text.Length;
+                    //richTextBox1.ScrollToCaret();//滚动到光标处
+                    //Debug.WriteLine(content1);
+                    FileStream fs = new FileStream(spsidata, FileMode.Append);
+                    try
+                    {
+                      using (StreamWriter wr = new StreamWriter(fs))
+                      {
+                        wr.Write(content1);//wr.Write(content1); 
+                        wr.Close();
+                      }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("exception", ex.Message);
+                    }
+                    serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据 
+                    NUMBER3 = 1;
+                }
+            }
+            else
+            {
+                content1 = Encoding.Default.GetString(receivedData);
+                Debug.WriteLine("NAK" + content1);
+                serialPort.Write(new byte[] { NAK }, 0, 1);//发送一行数据 
             }
         }
 
@@ -518,12 +697,13 @@ namespace SerialCom
                 MessageBox.Show("请先打开串口", "Error");
                 return;
             }
-            String strSend = "C";//发送框数据
-            serialPort.WriteLine(strSend);//发送一行数据 
+            ymodemflag = 1;
+            serialPort.Write(new byte[] {C}, 0, 1);//发送一行数据 
             richTextBox1.Text += "C" + "\r\n";
             richTextBox1.SelectionStart = richTextBox1.Text.Length;
             richTextBox1.ScrollToCaret();//滚动到光标处
             serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer 
+            timer1.Start();
         }
 
         // 重置串口参数设置
@@ -564,15 +744,23 @@ namespace SerialCom
             {
 
                 DateTime dateTimeNow = DateTime.Now;
-                //dateTimeNow.GetDateTimeFormats();
                 richTextBox1.Text += string.Format("{0}\r\n", dateTimeNow);
-                //dateTimeNow.GetDateTimeFormats('f')[0].ToString() + "\r\n";
             }
             richTextBox1.Text += "spsiread1" + "\r\n";
             richTextBox1.SelectionStart = richTextBox1.Text.Length;
             richTextBox1.ScrollToCaret();//滚动到光标处
+            Thread.Sleep(1000);
+            ymodemflag = 1;
+            serialPort.Write(new byte[] { C }, 0, 1);//发送一行数据 
+            richTextBox1.Text += "C" + "\r\n";
+            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+            richTextBox1.ScrollToCaret();//滚动到光标处
             serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer 
+            timer1.Start();
+
+
         }
+
 
         private void ButtonSPSIDowm_Click(object sender, EventArgs e)
         {
@@ -591,7 +779,20 @@ namespace SerialCom
             richTextBox1.Text += "spsiread2" + "\r\n";
             richTextBox1.SelectionStart = richTextBox1.Text.Length;
             richTextBox1.ScrollToCaret();//滚动到光标处
-            serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer             
+            Thread.Sleep(1000);
+            ymodemflag = 1;
+            serialPort.Write(new byte[] { C }, 0, 1);//发送一行数据 
+            richTextBox1.Text += "C" + "\r\n";
+            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+            richTextBox1.ScrollToCaret();//滚动到光标处
+            serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffer 
+            timer1.Start();
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            this.StatusDate.Text = DateTime.Now.ToShortDateString();
+            this.StatusTime.Text = DateTime.Now.ToLongTimeString();
         }
 
 
@@ -610,6 +811,18 @@ namespace SerialCom
             this.Close();
         }
 
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if(NUMBER3++>50)
+            {
+              serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据
+              Debug.WriteLine("重新计时="+NUMBER3);
+              NUMBER3 = 0;
+            }
+            //timer1.Interval = 500;
+            
+        }
+
         private void richTextBox1_KeyDown(object sender, KeyEventArgs e)
         {
             float zoom = richTextBox1.ZoomFactor;
@@ -625,9 +838,7 @@ namespace SerialCom
                 }
             }
         }
+
     }
-
-
-
 
 }

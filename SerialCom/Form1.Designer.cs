@@ -28,18 +28,21 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.MenuFile = new System.Windows.Forms.ToolStripMenuItem();
             this.SaveReceiveDataToFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.YMODEMReceive = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuTools = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuSetting = new System.Windows.Forms.ToolStripMenuItem();
-            this.ResetPortConfToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuIHelp = new System.Windows.Forms.ToolStripMenuItem();
-            this.AboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.TeamMenultem = new System.Windows.Forms.ToolStripMenuItem();
             this.AuthorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.ContributorSylvesterLiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ContactUsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.HTTPMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.TELMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.TechnicalSupportMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.EmailMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.groupBoxSerialPortSetting = new System.Windows.Forms.GroupBox();
@@ -71,6 +74,14 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.ButtonSPSIDowm = new System.Windows.Forms.Button();
             this.ButtonSPSITop = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusDate = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusTime = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.YmodemBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.menuStrip1.SuspendLayout();
             this.groupBoxSerialPortSetting.SuspendLayout();
             this.groupBoxSendSetting.SuspendLayout();
@@ -78,6 +89,7 @@
             this.groupBoxReceiveData.SuspendLayout();
             this.groupBoxSendData.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -98,8 +110,7 @@
             // MenuFile
             // 
             this.MenuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.SaveReceiveDataToFileToolStripMenuItem,
-            this.YMODEMReceive});
+            this.SaveReceiveDataToFileToolStripMenuItem});
             this.MenuFile.Name = "MenuFile";
             this.MenuFile.Size = new System.Drawing.Size(44, 21);
             this.MenuFile.Text = "文件";
@@ -107,16 +118,9 @@
             // SaveReceiveDataToFileToolStripMenuItem
             // 
             this.SaveReceiveDataToFileToolStripMenuItem.Name = "SaveReceiveDataToFileToolStripMenuItem";
-            this.SaveReceiveDataToFileToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
+            this.SaveReceiveDataToFileToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
             this.SaveReceiveDataToFileToolStripMenuItem.Text = "保存接收数据";
             this.SaveReceiveDataToFileToolStripMenuItem.Click += new System.EventHandler(this.SaveReceiveDataToFileToolStripMenuItem_Click);
-            // 
-            // YMODEMReceive
-            // 
-            this.YMODEMReceive.Name = "YMODEMReceive";
-            this.YMODEMReceive.Size = new System.Drawing.Size(162, 22);
-            this.YMODEMReceive.Text = "YMODEM-接收";
-            this.YMODEMReceive.Click += new System.EventHandler(this.YMODEMReceive_Click);
             // 
             // MenuTools
             // 
@@ -126,47 +130,69 @@
             // 
             // MenuSetting
             // 
-            this.MenuSetting.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ResetPortConfToolStripMenuItem});
             this.MenuSetting.Name = "MenuSetting";
             this.MenuSetting.Size = new System.Drawing.Size(44, 21);
             this.MenuSetting.Text = "设置";
             // 
-            // ResetPortConfToolStripMenuItem
-            // 
-            this.ResetPortConfToolStripMenuItem.Name = "ResetPortConfToolStripMenuItem";
-            this.ResetPortConfToolStripMenuItem.Size = new System.Drawing.Size(148, 22);
-            this.ResetPortConfToolStripMenuItem.Text = "重置串口设置";
-            this.ResetPortConfToolStripMenuItem.Click += new System.EventHandler(this.ResetPortConfToolStripMenuItem_Click);
-            // 
             // MenuIHelp
             // 
             this.MenuIHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.AboutToolStripMenuItem});
+            this.TeamMenultem,
+            this.ContactUsMenuItem,
+            this.TechnicalSupportMenuItem});
             this.MenuIHelp.Name = "MenuIHelp";
             this.MenuIHelp.Size = new System.Drawing.Size(44, 21);
-            this.MenuIHelp.Text = "帮助";
+            this.MenuIHelp.Text = "关于";
             // 
-            // AboutToolStripMenuItem
+            // TeamMenultem
             // 
-            this.AboutToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.AuthorToolStripMenuItem,
-            this.ContributorSylvesterLiToolStripMenuItem});
-            this.AboutToolStripMenuItem.Name = "AboutToolStripMenuItem";
-            this.AboutToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
-            this.AboutToolStripMenuItem.Text = "关于";
+            this.TeamMenultem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.AuthorToolStripMenuItem});
+            this.TeamMenultem.Name = "TeamMenultem";
+            this.TeamMenultem.Size = new System.Drawing.Size(124, 22);
+            this.TeamMenultem.Text = "创作团队";
             // 
             // AuthorToolStripMenuItem
             // 
             this.AuthorToolStripMenuItem.Name = "AuthorToolStripMenuItem";
-            this.AuthorToolStripMenuItem.Size = new System.Drawing.Size(240, 22);
+            this.AuthorToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             this.AuthorToolStripMenuItem.Text = "作者：LBJ (三胜团队)";
             // 
-            // ContributorSylvesterLiToolStripMenuItem
+            // ContactUsMenuItem
             // 
-            this.ContributorSylvesterLiToolStripMenuItem.Name = "ContributorSylvesterLiToolStripMenuItem";
-            this.ContributorSylvesterLiToolStripMenuItem.Size = new System.Drawing.Size(240, 22);
-            this.ContributorSylvesterLiToolStripMenuItem.Text = "贡献者：Sylvester Li / NaiHai";
+            this.ContactUsMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.HTTPMenuItem,
+            this.TELMenuItem2});
+            this.ContactUsMenuItem.Name = "ContactUsMenuItem";
+            this.ContactUsMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.ContactUsMenuItem.Text = "联系我们";
+            // 
+            // HTTPMenuItem
+            // 
+            this.HTTPMenuItem.Name = "HTTPMenuItem";
+            this.HTTPMenuItem.Size = new System.Drawing.Size(215, 22);
+            this.HTTPMenuItem.Text = "www.sentientech.com.cn";
+            // 
+            // TELMenuItem2
+            // 
+            this.TELMenuItem2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.TELMenuItem2.Name = "TELMenuItem2";
+            this.TELMenuItem2.Size = new System.Drawing.Size(215, 22);
+            this.TELMenuItem2.Text = "TEL: 88123686-803";
+            // 
+            // TechnicalSupportMenuItem
+            // 
+            this.TechnicalSupportMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.EmailMenuItem});
+            this.TechnicalSupportMenuItem.Name = "TechnicalSupportMenuItem";
+            this.TechnicalSupportMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.TechnicalSupportMenuItem.Text = "技术支持";
+            // 
+            // EmailMenuItem
+            // 
+            this.EmailMenuItem.Name = "EmailMenuItem";
+            this.EmailMenuItem.Size = new System.Drawing.Size(277, 22);
+            this.EmailMenuItem.Text = "Email: lebron@sentientech.com.cn ";
             // 
             // MenuExit
             // 
@@ -401,7 +427,7 @@
             this.groupBoxReceiveData.Controls.Add(this.buttonClearRecData);
             this.groupBoxReceiveData.Location = new System.Drawing.Point(261, 53);
             this.groupBoxReceiveData.Name = "groupBoxReceiveData";
-            this.groupBoxReceiveData.Size = new System.Drawing.Size(884, 387);
+            this.groupBoxReceiveData.Size = new System.Drawing.Size(911, 369);
             this.groupBoxReceiveData.TabIndex = 7;
             this.groupBoxReceiveData.TabStop = false;
             this.groupBoxReceiveData.Text = "接收数据";
@@ -414,7 +440,7 @@
             this.richTextBox1.Location = new System.Drawing.Point(6, 22);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.richTextBox1.Size = new System.Drawing.Size(878, 332);
+            this.richTextBox1.Size = new System.Drawing.Size(881, 314);
             this.richTextBox1.TabIndex = 2;
             this.richTextBox1.Text = "";
             this.richTextBox1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox1_KeyDown);
@@ -422,11 +448,11 @@
             // buttonClearRecData
             // 
             this.buttonClearRecData.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.buttonClearRecData.Location = new System.Drawing.Point(6, 360);
+            this.buttonClearRecData.Location = new System.Drawing.Point(6, 342);
             this.buttonClearRecData.Name = "buttonClearRecData";
             this.buttonClearRecData.Size = new System.Drawing.Size(75, 23);
             this.buttonClearRecData.TabIndex = 1;
-            this.buttonClearRecData.Text = "清空";
+            this.buttonClearRecData.Text = "清空窗口";
             this.buttonClearRecData.UseVisualStyleBackColor = true;
             this.buttonClearRecData.Click += new System.EventHandler(this.ButtonClearRecData_Click);
             // 
@@ -437,9 +463,9 @@
             this.groupBoxSendData.Controls.Add(this.button1);
             this.groupBoxSendData.Controls.Add(this.buttonSendData);
             this.groupBoxSendData.Controls.Add(this.textBoxSend);
-            this.groupBoxSendData.Location = new System.Drawing.Point(261, 448);
+            this.groupBoxSendData.Location = new System.Drawing.Point(261, 428);
             this.groupBoxSendData.Name = "groupBoxSendData";
-            this.groupBoxSendData.Size = new System.Drawing.Size(884, 101);
+            this.groupBoxSendData.Size = new System.Drawing.Size(911, 122);
             this.groupBoxSendData.TabIndex = 8;
             this.groupBoxSendData.TabStop = false;
             this.groupBoxSendData.Text = "发送数据";
@@ -447,7 +473,7 @@
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(809, 78);
+            this.button1.Location = new System.Drawing.Point(836, 99);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
@@ -457,7 +483,7 @@
             // buttonSendData
             // 
             this.buttonSendData.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonSendData.Location = new System.Drawing.Point(809, 22);
+            this.buttonSendData.Location = new System.Drawing.Point(836, 22);
             this.buttonSendData.Name = "buttonSendData";
             this.buttonSendData.Size = new System.Drawing.Size(75, 23);
             this.buttonSendData.TabIndex = 1;
@@ -474,7 +500,7 @@
             this.textBoxSend.Multiline = true;
             this.textBoxSend.Name = "textBoxSend";
             this.textBoxSend.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBoxSend.Size = new System.Drawing.Size(800, 80);
+            this.textBoxSend.Size = new System.Drawing.Size(827, 101);
             this.textBoxSend.TabIndex = 0;
             // 
             // groupBox1
@@ -508,11 +534,67 @@
             this.ButtonSPSITop.UseVisualStyleBackColor = true;
             this.ButtonSPSITop.Click += new System.EventHandler(this.ButtonSPSITop_Click);
             // 
+            // timer1
+            // 
+            this.timer1.Enabled = true;
+            this.timer1.Interval = 10;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabel2,
+            this.toolStripStatusLabel1,
+            this.StatusDate,
+            this.StatusTime,
+            this.YmodemBar1});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 553);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(1184, 22);
+            this.statusStrip1.TabIndex = 10;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // toolStripStatusLabel1
+            // 
+            this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(68, 17);
+            this.toolStripStatusLabel1.Text = "当前时间：";
+            // 
+            // StatusDate
+            // 
+            this.StatusDate.Name = "StatusDate";
+            this.StatusDate.Size = new System.Drawing.Size(74, 17);
+            this.StatusDate.Text = "2023/10/25";
+            // 
+            // StatusTime
+            // 
+            this.StatusTime.Name = "StatusTime";
+            this.StatusTime.Size = new System.Drawing.Size(56, 17);
+            this.StatusTime.Text = "09:37:10";
+            // 
+            // toolStripStatusLabel2
+            // 
+            this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(209, 17);
+            this.toolStripStatusLabel2.Text = "Ningbo Sentient Electronics Co.Ltd";
+            // 
+            // timer2
+            // 
+            this.timer2.Enabled = true;
+            this.timer2.Interval = 1000;
+            this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
+            // 
+            // YmodemBar1
+            // 
+            this.YmodemBar1.Name = "YmodemBar1";
+            this.YmodemBar1.Size = new System.Drawing.Size(100, 16);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1184, 561);
+            this.ClientSize = new System.Drawing.Size(1184, 575);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.groupBoxSendData);
             this.Controls.Add(this.groupBoxReceiveData);
@@ -528,7 +610,7 @@
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "串口调试软件";
+            this.Text = "串口调试软件-SPSI";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -542,6 +624,8 @@
             this.groupBoxSendData.ResumeLayout(false);
             this.groupBoxSendData.PerformLayout();
             this.groupBox1.ResumeLayout(false);
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -578,11 +662,8 @@
         private System.Windows.Forms.Button buttonClearRecData;
         private System.Windows.Forms.TextBox textBoxSend;
         private System.Windows.Forms.Button buttonSendData;
-        private System.Windows.Forms.ToolStripMenuItem AboutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem TeamMenultem;
         private System.Windows.Forms.ToolStripMenuItem AuthorToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem ContributorSylvesterLiToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem YMODEMReceive;
-        private System.Windows.Forms.ToolStripMenuItem ResetPortConfToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem SaveReceiveDataToFileToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button ButtonSPSIDowm;
@@ -591,6 +672,19 @@
         private System.Windows.Forms.ToolStripMenuItem MenuExit;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.ToolStripMenuItem ContactUsMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem TechnicalSupportMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem HTTPMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem TELMenuItem2;
+        private System.Windows.Forms.ToolStripMenuItem EmailMenuItem;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
+        private System.Windows.Forms.ToolStripStatusLabel StatusDate;
+        private System.Windows.Forms.ToolStripStatusLabel StatusTime;
+        private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
+        private System.Windows.Forms.ToolStripProgressBar YmodemBar1;
     }
 }
 

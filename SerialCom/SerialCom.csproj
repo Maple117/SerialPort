@@ -7,7 +7,7 @@
     <ProjectGuid>{103F12A3-54D0-4E4D-A442-F6331A4DCB24}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>SerialCom</RootNamespace>
-    <AssemblyName>SerialCom</AssemblyName>
+    <AssemblyName>串口调试助手-SPSI助手</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

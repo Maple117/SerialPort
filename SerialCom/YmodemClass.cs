@@ -2,260 +2,253 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace SerialCom
 {
-    public enum InitialCrcValue { Zeros, NonZero1 = 0xffff, NonZero2 = 0x1D0F }
-    internal class YmodemClass
+    public class YmodemClass
     {
-        /*
-                * Upload file via Ymodem protocol to the device
-                * ret: is the transfer succeeded? true is if yes
-                */
-        private string path;
-        public string Path { get { return Path; } set { path = value; } }
-        private string portName;
-        public string PortName { get { return portName; } set { portName = value; } }
-        private int baudRate;
-        public int BaudRate { get { return baudRate; } set { baudRate = value; } }
-        private System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
-        public event EventHandler NowDownloadProgressEvent;
-        public event EventHandler DownloadResultEvent;
-
-        public void YmodemUploadFile()
+        /**
+         * 为Byte数组计算两位CRC校验
+         * @param buf（验证的byte数组）
+         * @return byte[] 类型的两字节crc校验码
+         */
+        public static byte[] setParamCRC(byte[] buf)
         {
-            /* control signals */
-            const byte STX = 2;  // Start of TeXt 
-            const byte EOT = 4;  // End Of Transmission
-            const byte ACK = 6;  // Positive AC knowledgement
-            const byte C = 67;   // capital letter C
-
-            /* sizes */
-            const int dataSize = 1024;
-            const int crcSize = 2;
-
-            /* THE PACKET: 1029 bytes */
-            /* header: 3 bytes */
-            // STX
-            int packetNumber = 0;
-            int invertedPacketNumber = 255;
-            /* data: 1024 bytes */
-            byte[] data = new byte[dataSize];
-            /* footer: 2 bytes */
-            byte[] CRC = new byte[crcSize];
-
-            /* get the file */
-            FileStream fileStream = new FileStream(@path, FileMode.Open, FileAccess.Read);
-            serialPort.PortName = portName; serialPort.BaudRate = baudRate;
-            serialPort.Open();
-            try
-            {
-                //serialPort.Write(new byte[] { 0x31 }, 0, 1);
-                /* send the initial packet with filename and filesize */
-                if (serialPort.ReadByte() != C)
-                {
-                    Debug.WriteLine("Can't begin the transfer.");
-                    serialPort.Close();
-                    DownloadResultEvent.Invoke(false, new EventArgs());
-                    return;// false;
-                }
-                else
-                {
-                    Debug.WriteLine(" begin the transfer.");
-                }
-
-                SendYmodemInitialPacket(STX, packetNumber, invertedPacketNumber, data, dataSize, path, fileStream, CRC, crcSize);
-
-                byte temp = (byte)serialPort.ReadByte();
-                Debug.WriteLine(temp);
-                if (temp != ACK)//(serialPort.ReadByte() != ACK)
-                {
-                    Debug.WriteLine("Can't send the initial packet.");
-                    DownloadResultEvent.Invoke(false, new EventArgs());
-                    return;// false;
-                }
-
-                if (serialPort.ReadByte() != C)
-                {
-                    DownloadResultEvent.Invoke(false, new EventArgs());
-                    return;// false;
-                }
-                /* send packets with a cycle until we send the last byte */
-                int fileReadCount;
-                do
-                {
-                    /* if this is the last packet fill the remaining bytes with 0 */
-                    fileReadCount = fileStream.Read(data, 0, dataSize);
-                    if (fileReadCount == 0) break;
-                    if (fileReadCount != dataSize)
-                        for (int i = fileReadCount; i < dataSize; i++)
-                            data[i] = 0;
-
-                    /* calculate packetNumber */
-                    packetNumber++;
-                    if (packetNumber > 255)
-                        packetNumber -= 256;
-                    Console.WriteLine(packetNumber);
-
-                    /* calculate invertedPacketNumber */
-                    invertedPacketNumber = 255 - packetNumber;
-
-                    /* calculate CRC */
-                    Crc16Ccitt crc16Ccitt = new Crc16Ccitt(InitialCrcValue.Zeros);
-                    CRC = crc16Ccitt.ComputeChecksumBytes(data);
-
-                    /* send the packet */
-                    SendYmodemPacket(STX, packetNumber, invertedPacketNumber, data, dataSize, CRC, crcSize);
-                    int progress = (int)(((float)dataSize * packetNumber) / fileStream.Length * 100);
-                    Debug.WriteLine("progress:  " + progress);
-                    if (progress > 100) progress = 100;
-                    NowDownloadProgressEvent.Invoke(progress, new EventArgs());
-                    /* wait for ACK */
-                    temp = (byte)serialPort.ReadByte();
-                    if (temp != ACK)
-                    {
-                        Debug.WriteLine("temp" + temp);
-                        Debug.WriteLine("Couldn't send a packet.");
-                        DownloadResultEvent.Invoke(false, new EventArgs());
-                        return;// false;
-                    }
-                } while (dataSize == fileReadCount);
-
-                /* send EOT (tell the downloader we are finished) */
-                serialPort.Write(new byte[] { EOT }, 0, 1);
-                /* send closing packet */
-                packetNumber = 0;
-                invertedPacketNumber = 255;
-                data = new byte[dataSize];
-                CRC = new byte[crcSize];
-                SendYmodemClosingPacket(STX, packetNumber, invertedPacketNumber, data, dataSize, CRC, crcSize);
-                /* get ACK (downloader acknowledge the EOT) */
-                if (serialPort.ReadByte() != ACK)
-                {
-                    Debug.WriteLine("Can't complete the transfer.");
-                    DownloadResultEvent.Invoke(false, new EventArgs());
-                    return;// false;
-                }
-            }
-            catch (TimeoutException)
-            {
-                throw new Exception("Eductor does not answering");
-
-            }
-            finally
-            {
-                fileStream.Close();
-
-            }
-            serialPort.Close();
-            Debug.WriteLine("File transfer is succesful");
-            DownloadResultEvent.Invoke(true, new EventArgs());
-            return;// true;
+            int checkCode = 0;
+            checkCode = crc_16_CCITT(buf, buf.Length);
+            byte[] crcByte = new byte[2];
+            crcByte[0] = (byte)((checkCode >> 8) & 0xff);
+            crcByte[1] = (byte)(checkCode & 0xff);
+            // 将新生成的byte数组添加到原数据结尾并返回
+            return crcByte;
         }
 
-        private void SendYmodemInitialPacket(byte STX, int packetNumber, int invertedPacketNumber, byte[] data, int dataSize, string path, FileStream fileStream, byte[] CRC, int crcSize)
+        /**
+         * CRC-16/CCITT x16+x12+x5+1 算法
+         *
+         * info
+         * Name:CRC-16/CCITT
+         * Width:16
+         * Poly:0x1021
+         * Init:0x00
+         * RefIn:False
+         * RefOut:False
+         * XorOut:0x0000
+         * @param bytes 待校验byte【】 数组
+         * @param length
+         * @return int类型16进制crc校验码
+         */
+        public static int crc_16_CCITT(byte[] bytes, int length)
         {
-            string fileName = System.IO.Path.GetFileName(path);
-            string fileSize = fileStream.Length.ToString();
-            Debug.WriteLine("fileSize" + fileSize);
-            /* add filename to data */
-            int i;
-            for (i = 0; i < fileName.Length && (fileName.ToCharArray()[i] != 0); i++)
+            int crc = 0x00; // initial value
+            int polynomial = 0x1021; // poly value
+            for (int index = 0; index < bytes.Length; index++)
             {
-                data[i] = (byte)fileName.ToCharArray()[i];
+                byte b = bytes[index];
+                for (int i = 0; i < 8; i++)
+                {
+                    Boolean bit = ((b >> (7 - i) & 1) == 1);
+                    Boolean c15 = ((crc >> 15 & 1) == 1);
+                    crc <<= 1;
+                    if (c15 ^ bit)
+                        crc ^= polynomial;
+                }
             }
-            data[i] = 0;
-
-            /* add filesize to data */
-            int j;
-            for (j = 0; j < fileSize.Length && (fileSize.ToCharArray()[j] != 0); j++)
-            {
-                data[(i + 1) + j] = (byte)fileSize.ToCharArray()[j];
-            }
-            data[(i + 1) + j] = 0;
-
-            /* fill the remaining data bytes with 0 */
-            for (int k = ((i + 1) + j) + 1; k < dataSize; k++)
-            {
-                data[k] = 0;
-            }
-
-            /* calculate CRC */
-            Crc16Ccitt crc16Ccitt = new Crc16Ccitt(InitialCrcValue.Zeros);
-            CRC = crc16Ccitt.ComputeChecksumBytes(data);
-
-            /* send the packet */
-            SendYmodemPacket(STX, packetNumber, invertedPacketNumber, data, dataSize, CRC, crcSize);
-        }
-
-        private void SendYmodemClosingPacket(byte STX, int packetNumber, int invertedPacketNumber, byte[] data, int dataSize, byte[] CRC, int crcSize)
-        {
-            /* calculate CRC */
-            Crc16Ccitt crc16Ccitt = new Crc16Ccitt(InitialCrcValue.Zeros);
-            CRC = crc16Ccitt.ComputeChecksumBytes(data);
-
-            /* send the packet */
-            SendYmodemPacket(STX, packetNumber, invertedPacketNumber, data, dataSize, CRC, crcSize);
-        }
-
-        private void SendYmodemPacket(byte STX, int packetNumber, int invertedPacketNumber, byte[] data, int dataSize, byte[] CRC, int crcSize)
-        {
-            serialPort.Write(new byte[] { STX }, 0, 1);
-            serialPort.Write(new byte[] { (byte)packetNumber }, 0, 1);
-            Debug.WriteLine("\rpacketNumber:" + packetNumber);
-            serialPort.Write(new byte[] { (byte)invertedPacketNumber }, 0, 1);
-            Debug.WriteLine("\rinvertedPacketNumber:" + invertedPacketNumber);
-            serialPort.Write(data, 0, dataSize);
-            serialPort.Write(CRC, 0, crcSize);
-        }
-    }
-    public class Crc16Ccitt
-    {
-        const ushort poly = 4129;
-        ushort[] table = new ushort[256];
-        ushort initialValue = 0;
-
-        public ushort ComputeChecksum(byte[] bytes)
-        {
-            ushort crc = this.initialValue;
-            for (int i = 0; i < bytes.Length; ++i)
-            {
-                crc = (ushort)((crc << 8) ^ table[((crc >> 8) ^ (0xff & bytes[i]))]);
-            }
+            crc &= 0xffff;
+            ////输出String字样的16进制
+            //String strCrc = Integer.toHexString(crc).toUpperCase();
+            //System.out.println(strCrc);
             return crc;
         }
 
-        public byte[] ComputeChecksumBytes(byte[] bytes)
+        /**
+         * 对buf中offset以前crcLen长度的字节作crc校验，返回校验结果
+         * @param  buf
+         * @param crcLen
+         */
+        private static int CalcCRC(byte[] buf, int offset, int crcLen)
         {
-            ushort crc = ComputeChecksum(bytes);
-            return BitConverter.GetBytes(crc);
+            int start = offset;
+            int end = offset + crcLen;
+            int crc = 0x00; // initial value
+            int polynomial = 0x1021;
+            for (int index = start; index < end; index++)
+            {
+                byte b = buf[index];
+                for (int i = 0; i < 8; i++)
+                {
+                    Boolean bit = ((b >> (7 - i) & 1) == 1);
+                    Boolean c15 = ((crc >> 15 & 1) == 1);
+                    crc <<= 1;
+                    if (c15 ^ bit)
+                        crc ^= polynomial;
+                }
+            }
+            crc &= 0xffff;
+            return crc;
         }
 
-        public Crc16Ccitt(InitialCrcValue initialValue)
+        /***
+         * CRC校验是否通过
+         * @param srcByte
+         * @param length(验证码字节长度)
+         * @return 布尔类型 校验成功-true 、 校验失败-false
+         */
+        public static Boolean isPassCRC(byte[] srcByte, int length)
         {
-            this.initialValue = (ushort)initialValue;
-            ushort temp, a;
-            for (int i = 0; i < table.Length; ++i)
-            {
-                temp = 0;
-                a = (ushort)(i << 8);
-                for (int j = 0; j < 8; ++j)
-                {
-                    if (((temp ^ a) & 0x8000) != 0)
-                    {
-                        temp = (ushort)((temp << 1) ^ poly);
-                    }
-                    else
-                    {
-                        temp <<= 1;
-                    }
-                    a <<= 1;
-                }
-                table[i] = temp;
-            }
+
+            // 取出除crc校验位的其他数组，进行计算，得到CRC校验结果
+            int calcCRC = CalcCRC(srcByte, 3, srcByte.Length-length - 3);//因为我的起始标识不算入校验数据中，所以从索引为1开始计算，若是所有数据都需要计算则改成0，并且长度也不需要-1
+            byte[] bytes = new byte[2];
+            bytes[0] = (byte)((calcCRC >> 8) & 0xff);
+            bytes[1] = (byte)(calcCRC & 0xff);
+
+            // 取出CRC校验位，进行计算
+            int i = srcByte.Length;
+            byte[] b = { srcByte[i - 2], srcByte[i - 1] };
+
+            // 比较
+            return bytes[0] == b[0] && bytes[1] == b[1];
         }
+
+        // public void YMODEM_Recive(byte[] buf)
+        //{
+        //    try
+        //    {
+                
+        //        byte[] receivedData = new byte[133];//创建接收数据数组serialPort.BytesToRead
+        //        serialPort.Read(receivedData, 0, receivedData.Length);//读取数据
+        //        string content = string.Empty;
+        //        content = Encoding.Default.GetString(receivedData);
+        //        Debug.WriteLine("SJ=" + content);
+        //        if (receivedData[0] == 1)
+        //        {
+        //            if (YmodemClass.isPassCRC(receivedData, 2))
+        //            {
+        //                content1 = Encoding.Default.GetString(receivedData);
+        //                if (receivedData[0] == 1 & receivedData[1] == 00)
+        //                {
+        //                    if (NUMBER1 == 2)
+        //                    {
+        //                        NUMBER1 = 0;
+        //                        serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据 
+        //                    }
+        //                    else if (NUMBER1 == 0)
+        //                    {
+        //                        NUMBER1 = 1;
+        //                        DateTime dateTimeNow = DateTime.Now;
+        //                        var n = dateTimeNow.ToString("MM-dd-HH-mm-ss");
+        //                        string time = string.Format("{0}", n);
+        //                        string[] inheritdata = content1.Split('\0');
+        //                        string str1 = System.Environment.CurrentDirectory;
+        //                        spsidata = str1 + "\\" + time + inheritdata[1].Substring(1);
+        //                        fs = new FileStream(spsidata, FileMode.Append);
+        //                        serialPort.Write(new byte[] { ACK, C }, 0, 2);//发送一行数据 
+        //                        richTextBox2.Text = "";//清空
+        //                        NUMBER3 = 1;
+
+        //                    }
+        //                    serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+        //                }
+        //                else if (receivedData[1] + receivedData[2] == 255)//(serialPort.ReadByte() != ACK)
+        //                {
+
+        //                    NUMBER2++;
+        //                    NUMBER3 = 0;
+        //                    if (NUMBER1 == 1)
+        //                    {
+        //                        NUMBER1 = 2;
+        //                        content1 = Encoding.Default.GetString(receivedData, 7, receivedData.Length - 9);
+        //                    }
+        //                    else
+        //                    {
+        //                        content1 = Encoding.Default.GetString(receivedData, 3, receivedData.Length - 5);
+        //                    }
+        //                    richTextBox2.AppendText(content1);
+        //                    richTextBox2.SelectionStart = richTextBox2.Text.Length;
+        //                    richTextBox2.ScrollToCaret();//滚动到光标处
+        //                    if (NUMBER2 == 100)
+        //                    {
+        //                        wr = new StreamWriter(fs);
+        //                        wr.Write(richTextBox2.Text);
+        //                        wr.Close();
+        //                        richTextBox2.Text = "";//清空
+        //                        NUMBER2 = 0;
+        //                    }
+        //                    Thread.Sleep(100);
+        //                    serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据 
+        //                    NUMBER3 = 1;
+        //                    serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+        //                }
+        //            }
+        //            else
+        //            {
+        //                serialPort.Write(new byte[] { NAK }, 0, 1);//发送一行数据 
+        //                serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+        //            }
+        //        }
+        //        else if (receivedData[0] == EOT)//(serialPort.ReadByte() != ACK)
+        //        {
+        //            if (NUMBER == 0)
+        //            {
+        //                serialPort.Write(new byte[] { NAK }, 0, 1);//发送一行数据 
+        //                NUMBER++;
+        //            }
+        //            else
+        //            {
+        //                serialPort.Write(new byte[] { ACK, C }, 0, 2);//发送一行数据 
+        //                NUMBER = 0;
+        //            }
+        //            richTextBox1.AppendText(content + " ");
+        //            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+        //            richTextBox1.ScrollToCaret();//滚动到光标处
+        //            serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+        //        }
+        //        else if (receivedData[0] == ACK)
+        //        {
+        //            richTextBox1.AppendText(content + " ");
+        //            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+        //            richTextBox1.ScrollToCaret();//滚动到光标处
+        //            ymodemflag = 0;
+        //            try
+        //            {
+        //                wr = new StreamWriter(fs);
+        //                wr.Write(richTextBox2.Text);
+        //                wr.Close();
+        //            }
+        //            catch (Exception ex) { Console.WriteLine("exception", ex.Message); }
+        //            richTextBox1.AppendText("save ok");
+        //            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+        //            richTextBox1.ScrollToCaret();//滚动到光标处
+        //            serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+        //            timer1.Stop();
+        //        }
+        //        else if (receivedData[0] == NAK)//(serialPort.ReadByte() != ACK)
+        //        {
+        //            richTextBox1.AppendText(content + " ");
+        //            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+        //            richTextBox1.ScrollToCaret();//滚动到光标处
+        //            serialPort.Write(new byte[] { ACK }, 0, 1);//发送一行数据 
+        //            serialPort.DiscardInBuffer(); //清空SerialPort控件的Buffe
+
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        MessageBox.Show(ex.Message, "Error");
+        //        richTextBox1.Text = "";//清空
+        //    }
+
+        //}
+
+
     }
+
 }
